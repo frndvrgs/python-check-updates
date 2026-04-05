@@ -1,5 +1,7 @@
 # python-check-updates
 
+[![PyPI](https://img.shields.io/pypi/v/python-check-updates)](https://pypi.org/project/python-check-updates/)
+
 Check and upgrade Python dependency versions against PyPI.
 
 ## Install
