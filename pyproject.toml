@@ -24,7 +24,7 @@ packages = ["src/pcu"]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.15.0",
+    "ruff>=0.15.9",
     "mypy>=1.20.0",
 ]
 

@@ -4,10 +4,10 @@
 
 Check and upgrade Python dependency versions against PyPI.
 
-## Install
+## Installation
 
 ```bash
-pip install python-check-updates
+uv tool install python-check-updates
 ```
 
 ## Usage
@@ -16,11 +16,9 @@ pip install python-check-updates
 pcu          # check all dependencies for updates
 pcu -u       # upgrade pinned versions and sync
 ```
-
-## What it checks
-
+It checks uv toml and fallback to requirements:
 - `pyproject.toml` — dependencies, optional-dependencies, dependency-groups
-- `requirements.txt` — fallback if no pyproject.toml
+- `requirements.txt` — dependencies
 
 ## Output
 
