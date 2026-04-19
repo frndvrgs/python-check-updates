@@ -20,6 +20,28 @@ It checks uv toml and fallback to requirements:
 - `pyproject.toml` — dependencies, optional-dependencies, dependency-groups
 - `requirements.txt` — dependencies
 
+## Filtering upgrades
+
+Combine these flags with `-u` to restrict which bumps are applied:
+
+- `--major` — include major version bumps
+- `--minor` — include minor version bumps
+- `--patch` — include patch version bumps
+- `--pin` — include pin-only bumps (installed is already at latest, pin string is stale)
+- `--drop pkg1 pkg2 ...` — exclude named packages from the upgrade set
+
+Flags combine as a union:
+
+```sh
+pcu -u --minor --patch            # minor + patch only, skip major
+pcu -u --drop anthropic pydantic  # everything except these two
+pcu -u --minor --drop cohere      # minor bumps, minus cohere
+```
+
+## Safe upgrades
+
+Before touching `pyproject.toml`, `uv.lock`, or `requirements.txt`, `pcu` snapshots the current contents into `.pcu/` (which is auto-added to `.gitignore`). If `uv sync` or `pip install` fails, the snapshot is restored and a hint is printed suggesting `--drop` to exclude suspect packages on retry. On success, `.pcu/` is cleaned up.
+
 ## Output
 
 ```
