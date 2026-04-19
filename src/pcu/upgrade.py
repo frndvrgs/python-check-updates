@@ -21,7 +21,48 @@ from pcu.deps import (
 from pcu.styles import BOLD, DIM, GREEN, RED, RESET, UPDATE_STYLE, YELLOW
 
 
-def cmd_upgrade() -> None:
+def _normalize(name: str) -> str:
+    return name.lower().replace("_", "-")
+
+
+def _classify_with_pin(dep: dict[str, str], installed: dict[str, str]) -> str:
+    """Return 'major'|'minor'|'patch'|'pin'|'none' for this dep."""
+    severity = classify_update(dep["version"], dep["latest"])
+    if severity == "none":
+        return "none"
+    inst = installed.get(dep["name"].lower(), "")
+    if inst and not is_outdated(inst, dep["latest"]):
+        return "pin"
+    return severity
+
+
+def _apply_filters(
+    to_update: list[dict[str, str]],
+    installed: dict[str, str],
+    severities: set[str],
+    drops: list[str],
+) -> tuple[list[dict[str, str]], list[str]]:
+    """Return (filtered, unknown_drops)."""
+    drop_set = {_normalize(d) for d in drops}
+    known = {_normalize(d["name"]) for d in to_update}
+    unknown = sorted(drop_set - known)
+
+    filtered: list[dict[str, str]] = []
+    for dep in to_update:
+        if _normalize(dep["name"]) in drop_set:
+            continue
+        if severities:
+            sev = _classify_with_pin(dep, installed)
+            if sev not in severities:
+                continue
+        filtered.append(dep)
+    return filtered, unknown
+
+
+def cmd_upgrade(severities: set[str] | None = None, drops: list[str] | None = None) -> None:
+    severities = severities or set()
+    drops = drops or []
+
     print(f"\n{BOLD}Python Check Updates{RESET}")
     print(f"{DIM}Upgrading dependencies...{RESET}\n")
 
@@ -48,13 +89,20 @@ def cmd_upgrade() -> None:
 
     to_update = [d for d in deps if d["latest"] and is_outdated(d["version"], d["latest"])]
 
+    to_update, unknown_drops = _apply_filters(to_update, installed, severities, drops)
+    if unknown_drops:
+        print(f"  {YELLOW}Warning: --drop names not in upgrade set: {', '.join(unknown_drops)}{RESET}\n")
+
     if not to_update:
-        print(f"  {GREEN}All pinned versions are already up to date!{RESET}\n")
-        if has_pyproject and has_requirements:
-            expected = generate_requirements(load_pyproject())
-            if REQUIREMENTS_PATH.read_text() != expected:
-                REQUIREMENTS_PATH.write_text(expected)
-                print("  Synced requirements.txt\n")
+        if severities or drops:
+            print(f"  {DIM}Nothing to upgrade after filters.{RESET}\n")
+        else:
+            print(f"  {GREEN}All pinned versions are already up to date!{RESET}\n")
+            if has_pyproject and has_requirements:
+                expected = generate_requirements(load_pyproject())
+                if REQUIREMENTS_PATH.read_text() != expected:
+                    REQUIREMENTS_PATH.write_text(expected)
+                    print("  Synced requirements.txt\n")
         return
 
     print(f"  {BOLD}Updating pinned versions:{RESET}\n")
