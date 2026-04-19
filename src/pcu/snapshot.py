@@ -9,16 +9,17 @@ GITIGNORE_ENTRY = ".pcu/"
 
 
 def ensure_gitignore() -> None:
-    """Add .pcu/ to .gitignore if not already listed."""
-    if GITIGNORE_PATH.exists():
-        lines = GITIGNORE_PATH.read_text().splitlines()
-        stripped = {line.strip().rstrip("/") for line in lines}
-        if ".pcu" in stripped:
-            return
-        sep = "" if GITIGNORE_PATH.read_text().endswith("\n") else "\n"
-        GITIGNORE_PATH.write_text(GITIGNORE_PATH.read_text() + sep + GITIGNORE_ENTRY + "\n")
-    else:
+    """Add .pcu/ to .gitignore if not already listed, ensuring a trailing newline."""
+    if not GITIGNORE_PATH.exists():
         GITIGNORE_PATH.write_text(GITIGNORE_ENTRY + "\n")
+        return
+    text = GITIGNORE_PATH.read_text()
+    stripped = {line.strip().rstrip("/") for line in text.splitlines()}
+    if ".pcu" in stripped:
+        return
+    if text and not text.endswith("\n"):
+        text += "\n"
+    GITIGNORE_PATH.write_text(text + GITIGNORE_ENTRY + "\n")
 
 
 def snapshot(files: list[Path]) -> None:
