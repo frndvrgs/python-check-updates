@@ -3,6 +3,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import tomllib
+from pathlib import Path
 
 from pcu.deps import (
     PYPROJECT_PATH,
@@ -18,6 +19,7 @@ from pcu.deps import (
     load_pyproject,
     update_file_content,
 )
+from pcu.snapshot import cleanup, ensure_gitignore, restore, snapshot
 from pcu.styles import BOLD, DIM, GREEN, RED, RESET, UPDATE_STYLE, YELLOW
 
 
@@ -71,6 +73,14 @@ def cmd_upgrade(severities: set[str] | None = None, drops: list[str] | None = No
         print(f"\n  {RED}No pyproject.toml or requirements.txt found.{RESET}\n")
         sys.exit(1)
 
+    managed_files: list[Path] = []
+    if has_pyproject:
+        managed_files.append(PYPROJECT_PATH)
+        if Path("uv.lock").exists():
+            managed_files.append(Path("uv.lock"))
+    if has_requirements:
+        managed_files.append(REQUIREMENTS_PATH)
+
     if has_pyproject:
         deps = get_all_dependencies(load_pyproject())
     else:
@@ -104,6 +114,9 @@ def cmd_upgrade(severities: set[str] | None = None, drops: list[str] | None = No
                     REQUIREMENTS_PATH.write_text(expected)
                     print("  Synced requirements.txt\n")
         return
+
+    ensure_gitignore()
+    snapshot(managed_files)
 
     print(f"  {BOLD}Updating pinned versions:{RESET}\n")
     name_w = max(len(d["name"] + d["extras"]) for d in to_update) + 2
@@ -146,7 +159,12 @@ def cmd_upgrade(severities: set[str] | None = None, drops: list[str] | None = No
         result = subprocess.run("pip install -r requirements.txt", shell=True)
 
     if result.returncode != 0:
-        print(f"\n  {RED}Sync failed.{RESET}")
+        print(f"\n  {RED}Sync failed. Reverting changes...{RESET}")
+        restore(managed_files)
+        cleanup()
+        attempted = " ".join(d["name"] for d in to_update)
+        print(f"\n  {DIM}To retry excluding specific packages:{RESET}")
+        print(f"  {BOLD}pcu -u --drop <package>{RESET}  (attempted: {attempted})\n")
         sys.exit(1)
 
     print(f"\n{DIM}Verifying...{RESET}\n")
@@ -167,3 +185,4 @@ def cmd_upgrade(severities: set[str] | None = None, drops: list[str] | None = No
         print(f"  {GREEN}Upgrade complete!{RESET}\n")
     else:
         print(f"  {YELLOW}Some packages may not have updated to the exact latest version.{RESET}\n")
+    cleanup()
