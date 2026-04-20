@@ -1,5 +1,6 @@
 import argparse
 import sys
+from importlib.metadata import version
 
 from pcu.check import cmd_check
 from pcu.upgrade import cmd_upgrade
@@ -7,6 +8,7 @@ from pcu.upgrade import cmd_upgrade
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="pcu", description="Python Check Updates")
+    parser.add_argument("-v", "--version", action="version", version=f"pcu {version('python-check-updates')}")
     parser.add_argument("-u", "--upgrade", action="store_true", help="upgrade pinned versions to latest")
     parser.add_argument("--major", action="store_true", help="include major bumps (use with -u)")
     parser.add_argument("--minor", action="store_true", help="include minor bumps (use with -u)")

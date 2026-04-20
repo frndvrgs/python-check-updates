@@ -1,6 +1,6 @@
 [project]
 name = "python-check-updates"
-version = "0.2.0"
+version = "0.2.1"
 description = "Check and upgrade Python dependency versions in pyproject.toml and requirements.txt"
 readme = "README.md"
 license = "MIT"
