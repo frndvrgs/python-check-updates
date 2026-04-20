@@ -10,6 +10,14 @@ Check and upgrade Python dependency versions against PyPI.
 uv tool install python-check-updates
 ```
 
+To upgrade an existing install to the latest version:
+
+```bash
+uv tool upgrade python-check-updates
+```
+
+Run `pcu -v` to check the installed version.
+
 ## Usage
 
 ```bash
